@@ -1,0 +1,55 @@
+# Terraform
+**/.terraform/*
+.terraform.tfstate.lock.info
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+tfplan
+*.tfplan
+
+# Keep the provider lock file (best practice to commit it)
+!.terraform.lock.hcl
+
+# Kubernetes / cloud credentials — never commit
+kubeconfig
+*.kubeconfig
+.kube/
+*.pem
+*.key
+.aws/
+credentials
+
+# Snapshots captured by gpuctl (may name internal hosts)
+snapshot.json
+incident-*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

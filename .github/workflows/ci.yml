@@ -1,0 +1,85 @@
+name: ci
+
+# Static validation only. This workflow never provisions cloud resources and
+# never needs cloud credentials.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  HELM_CHART_VERSION: v25.3.4
+
+jobs:
+  python:
+    name: python (lint, type, test)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e '.[dev]'
+      - run: ruff check src tests
+      - run: mypy
+      - run: pytest -q
+
+  terraform:
+    name: terraform (fmt, validate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - run: terraform -chdir=terraform fmt -check -recursive
+      - run: terraform -chdir=terraform init -backend=false -input=false
+      - run: terraform -chdir=terraform validate
+
+  manifests:
+    name: kubernetes (kubeconform)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSLo kubeconform.tar.gz \
+            https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform.tar.gz
+          sudo mv kubeconform /usr/local/bin/
+      - run: kubeconform -strict -summary kubernetes/
+
+  helm:
+    name: helm (template GPU Operator overlay)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+      - name: Render chart with our values
+        run: |
+          helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
+          helm repo update nvidia
+          helm template gpu-operator nvidia/gpu-operator \
+            --version "${HELM_CHART_VERSION}" -n gpu-operator \
+            -f helm/gpu-operator/values.yaml > /dev/null
+          echo "GPU Operator overlay rendered successfully."
+
+  secrets:
+    name: secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"

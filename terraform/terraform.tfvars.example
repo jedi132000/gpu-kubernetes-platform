@@ -1,0 +1,23 @@
+# Copy to terraform.tfvars and adjust. Do NOT commit terraform.tfvars if it
+# contains environment-specific values you want to keep private.
+
+region          = "us-east-1"
+cluster_name    = "gpu-platform"
+cluster_version = "1.31"
+
+azs      = ["us-east-1a", "us-east-1b"]
+vpc_cidr = "10.0.0.0/16"
+
+# GPU node group. Set enable_gpu_node_group = false to stand up only the CPU
+# system group (useful for a cheap control-plane/networking validation).
+enable_gpu_node_group = true
+gpu_instance_type     = "g5.xlarge"
+gpu_node_min          = 0
+gpu_node_desired      = 1
+gpu_node_max          = 2
+
+tags = {
+  project    = "gpu-kubernetes-platform"
+  managed-by = "terraform"
+  owner      = "platform-team"
+}

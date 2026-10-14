@@ -1,0 +1,44 @@
+# Namespace for GPU workloads with a hard cap on accelerator consumption.
+#
+# The ResourceQuota bounds how many GPUs a single tenant namespace may hold so
+# one team cannot starve the shared accelerator pool. The LimitRange supplies a
+# default GPU request/limit of 1 so a pod that forgets to request a GPU is
+# rejected rather than silently landing on a GPU node and wasting it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gpu-workloads
+  labels:
+    app.kubernetes.io/part-of: gpu-kubernetes-platform
+    pod-security.kubernetes.io/enforce: baseline
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: gpu-quota
+  namespace: gpu-workloads
+spec:
+  hard:
+    # Whole-GPU scheduling only: nvidia.com/gpu is an integer resource.
+    requests.nvidia.com/gpu: "4"
+    requests.cpu: "32"
+    requests.memory: 128Gi
+    limits.nvidia.com/gpu: "4"
+    pods: "20"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: gpu-defaults
+  namespace: gpu-workloads
+spec:
+  limits:
+    # GPUs cannot be overcommitted, so request must equal limit. Defaulting
+    # both to 1 keeps a malformed pod from occupying a GPU node with no GPU
+    # request (which the scheduler would otherwise allow onto the tainted node
+    # only via toleration, wasting the accelerator).
+    - type: Container
+      default:
+        nvidia.com/gpu: "1"
+      defaultRequest:
+        nvidia.com/gpu: "1"

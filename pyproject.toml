@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gpuctl"
+version = "0.1.0"
+description = "Preflight and validation CLI for GPU-aware Kubernetes clusters"
+readme = "src/README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "gpu-kubernetes-platform contributors" }]
+keywords = ["kubernetes", "gpu", "nvidia", "eks", "preflight", "validation"]
+
+dependencies = [
+    "typer>=0.12,<1.0",
+]
+
+[project.optional-dependencies]
+# Live-cluster access. Kept optional so unit tests and `--snapshot` mode
+# run without a cluster or the (large) kubernetes client dependency.
+cluster = ["kubernetes>=29,<31"]
+dev = [
+    "pytest>=8.0",
+    "mypy>=1.8",
+    "ruff>=0.5",
+    "kubernetes>=29,<31",
+]
+
+[project.scripts]
+gpuctl = "gpuctl.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+gpuctl = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# typer.Option(...) in argument defaults is the documented Typer idiom.
+"src/gpuctl/cli.py" = ["B008"]
+
+[tool.mypy]
+python_version = "3.10"
+packages = ["gpuctl"]
+mypy_path = "src"
+strict = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = ["kubernetes", "kubernetes.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

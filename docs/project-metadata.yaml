@@ -1,0 +1,76 @@
+# Machine-readable project metadata. Kept in sync with the implementation.
+schema_version: 1
+name: gpu-kubernetes-platform
+domain: gpu-kubernetes-infrastructure
+summary: >-
+  Reproducible GPU-aware Kubernetes reference on AWS EKS: Terraform for the
+  cluster and GPU node group, an NVIDIA GPU Operator values overlay, scheduling
+  controls (taints, affinity, quotas, priority), and a read-only Python
+  preflight CLI that classifies cluster GPU readiness.
+
+capabilities:
+  - EKS cluster and GPU node group provisioning via upstream Terraform modules
+  - Dedicated GPU nodes (taint + label) with quota and priority controls
+  - NVIDIA GPU Operator overlay with AMI-owned driver/runtime
+  - Real GPU validation workload (CUDA vectorAdd) and a CPU-only demo
+  - gpuctl preflight: connectivity, version, GPU nodes, allocatable GPUs,
+    taints, operator health, device plugin, pending-pod diagnostics
+  - Honest cluster-state classification (unreachable / no_gpu_nodes /
+    missing_operator / unhealthy_gpu / gpu_ready)
+
+tech_stack:
+  iac: [terraform]
+  cloud: [aws, eks]
+  kubernetes: [helm, nvidia-gpu-operator, device-plugin, nfd, dcgm-exporter]
+  language: [python]
+  cli: [typer]
+
+execution_modes:
+  - name: cpu-only
+    requires_gpu: false
+    description: Scheduling model + gpuctl against any cluster (kind/minikube/EKS).
+  - name: full-gpu-eks
+    requires_gpu: true
+    description: Terraform EKS + GPU node group + operator + GPU validation job.
+  - name: offline-snapshot
+    requires_gpu: false
+    description: Analyze a captured snapshot JSON with gpuctl preflight --from-file.
+
+integration_points:
+  - name: dcgm-telemetry
+    direction: produces
+    consumer: gpu-observability-stack
+    contract: DCGM Exporter metrics from the GPU Operator.
+  - name: workload-specs
+    direction: provides
+    consumer: gpu-scheduler-capacity-lab
+    contract: kubernetes/scheduling manifests as example workload inputs.
+
+related_repositories:
+  - jedi132000/gpu-scheduler-capacity-lab
+  - jedi132000/gpu-observability-stack
+
+tested_environments:
+  - tool: terraform
+    version: 1.9.8
+    checks: [fmt, init, validate]
+    status: passed
+  - tool: helm
+    version: 3.16.4
+    checks: [template]
+    chart: nvidia/gpu-operator@v25.3.4
+    status: passed
+  - tool: kubeconform
+    version: 0.6.7
+    checks: [strict-schema-validation]
+    status: passed
+  - tool: pytest
+    version: "8.x"
+    checks: [unit, cli, manifests]
+    status: passed
+
+known_limitations:
+  - No live GPU hardware was available; the GPU validation Job and gpu_ready
+    state were verified via unit tests and schema validation, not on a GPU.
+  - terraform apply was not run; no cloud resources were created.
+  - MIG and DRA are documented but not enabled by default.

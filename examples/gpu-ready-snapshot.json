@@ -1,0 +1,79 @@
+{
+  "error": null,
+  "nodes": [
+    {
+      "allocatable": {
+        "cpu": "4",
+        "memory": "16Gi",
+        "nvidia.com/gpu": "1"
+      },
+      "labels": {
+        "nvidia.com/gpu.present": "true",
+        "workload-class": "gpu"
+      },
+      "name": "ip-10-0-1-10.gpu",
+      "ready": true,
+      "taints": [
+        {
+          "effect": "NoSchedule",
+          "key": "nvidia.com/gpu",
+          "value": "present"
+        }
+      ]
+    },
+    {
+      "allocatable": {
+        "cpu": "2",
+        "memory": "8Gi"
+      },
+      "labels": {
+        "workload-class": "system"
+      },
+      "name": "ip-10-0-2-20.sys",
+      "ready": true,
+      "taints": []
+    }
+  ],
+  "pods": [
+    {
+      "labels": {
+        "app": "gpu-operator"
+      },
+      "name": "gpu-operator-7d9",
+      "namespace": "gpu-operator",
+      "node_name": "ip-10-0-2-20.sys",
+      "phase": "Running",
+      "ready": true,
+      "reason": null
+    },
+    {
+      "labels": {},
+      "name": "nvidia-device-plugin-daemonset-abc",
+      "namespace": "gpu-operator",
+      "node_name": "ip-10-0-1-10.gpu",
+      "phase": "Running",
+      "ready": true,
+      "reason": null
+    },
+    {
+      "labels": {},
+      "name": "nvidia-dcgm-exporter-xyz",
+      "namespace": "gpu-operator",
+      "node_name": "ip-10-0-1-10.gpu",
+      "phase": "Running",
+      "ready": true,
+      "reason": null
+    },
+    {
+      "labels": {},
+      "name": "nvidia-driver-daemonset-q",
+      "namespace": "gpu-operator",
+      "node_name": "ip-10-0-1-10.gpu",
+      "phase": "Running",
+      "ready": true,
+      "reason": null
+    }
+  ],
+  "reachable": true,
+  "server_version": "v1.31.4"
+}

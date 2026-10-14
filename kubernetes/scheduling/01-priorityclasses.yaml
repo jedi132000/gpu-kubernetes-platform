@@ -1,0 +1,26 @@
+# Priority classes for GPU workloads.
+#
+# Interactive/inference serving pods should preempt lower-value batch training
+# when the GPU pool is saturated. globalDefault is intentionally left false so
+# non-GPU cluster workloads are unaffected.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: gpu-inference-high
+value: 100000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: >-
+  High priority for latency-sensitive inference serving. May preempt
+  gpu-batch-low pods when accelerators are contended.
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: gpu-batch-low
+value: 10000
+globalDefault: false
+preemptionPolicy: Never
+description: >-
+  Lower priority for batch/training jobs. Will not preempt other pods; subject
+  to preemption by gpu-inference-high when GPUs are scarce.

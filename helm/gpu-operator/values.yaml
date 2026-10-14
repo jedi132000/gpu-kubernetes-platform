@@ -1,0 +1,55 @@
+# Values overlay for the upstream NVIDIA GPU Operator chart.
+#
+# Chart: nvidia/gpu-operator  (https://helm.ngc.nvidia.com/nvidia)
+# Pinned version: v25.3.4  (see helm/gpu-operator/README.md)
+#
+# Ownership decision (docs/adr/0001): the GPU node group uses an AWS
+# GPU-optimized AMI that already ships the NVIDIA driver and container runtime.
+# To avoid two components managing the same driver, the operator runs with
+# driver and toolkit management DISABLED and owns only:
+#   * node-feature-discovery (GPU node labelling)
+#   * the NVIDIA device plugin (advertises nvidia.com/gpu)
+#   * DCGM Exporter (telemetry, consumed by gpu-observability-stack)
+
+driver:
+  # AMI provides the driver. Do not let the operator install/manage one.
+  enabled: false
+
+toolkit:
+  # AMI provides the NVIDIA container runtime.
+  enabled: false
+
+devicePlugin:
+  enabled: true
+  config:
+    # Whole-GPU (default) strategy. MIG is opt-in and hardware specific; see
+    # docs for enabling mig.strategy on MIG-capable instances only.
+    name: ""
+
+# Node Feature Discovery labels GPU nodes (nvidia.com/gpu.present=true), which
+# the scheduling manifests and gpuctl rely on.
+nfd:
+  enabled: true
+
+# DCGM Exporter telemetry. The gpu-observability-stack repo scrapes these.
+dcgmExporter:
+  enabled: true
+  serviceMonitor:
+    # Enable only if the Prometheus Operator CRDs are installed; the
+    # observability stack can also scrape via static config.
+    enabled: false
+
+# MIG manager off by default; whole-GPU scheduling is the supported default.
+mig:
+  strategy: none
+
+migManager:
+  enabled: false
+
+# Keep operator components tolerant of the GPU node taint so the device plugin
+# and DCGM DaemonSets can run on GPU nodes.
+daemonsets:
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule

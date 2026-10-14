@@ -1,0 +1,52 @@
+# Real GPU validation workload.
+#
+# Runs the CUDA vectorAdd sample, which exits 0 only if a GPU is present and
+# the CUDA runtime can execute a kernel on it. This is the smallest honest
+# end-to-end proof that scheduling + driver + device plugin + runtime all work.
+#
+# Requires compatible NVIDIA hardware. On a CPU-only cluster this Job stays
+# Pending (see 03-pending-pod-example.yaml for the diagnostic walkthrough).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gpu-vectoradd-validation
+  namespace: gpu-workloads
+  labels:
+    app.kubernetes.io/name: gpu-validation
+    app.kubernetes.io/part-of: gpu-kubernetes-platform
+spec:
+  backoffLimit: 2
+  # Clean up 5 minutes after completion so repeated validation runs stay tidy.
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gpu-validation
+    spec:
+      restartPolicy: Never
+      priorityClassName: gpu-batch-low
+      # Tolerate the dedicated GPU node taint applied by the node group.
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      # Only schedule onto nodes the GPU Operator has labelled as GPU-present.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.present
+                    operator: In
+                    values: ["true"]
+      containers:
+        - name: vectoradd
+          image: nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: false # CUDA sample image runs as root; see docs/security.md
+            capabilities:
+              drop: ["ALL"]
